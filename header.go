@@ -422,6 +422,7 @@ type HostAllInfo struct {
 	promeerror                     int
 	db                             *sql.DB
 	dbErrorPerQuery                dbErrorPerQuery
+	topNPosition                   int
 	PromeParam                     mapProme `json:"-"`
 	MySlave                        mapMy    `json:"-"`
 	MyStatu                        mapMy    `json:"-"`

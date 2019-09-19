@@ -141,44 +141,44 @@ func metricCalc(val *HostAllInfo, old *HostAllInfo) {
 
 }
 
-func calcFileIODelta(new *HostAllInfo, old *HostAllInfo) mapFileIO {
-	fileIODelta := make(mapFileIO, 0)
-	for key, vStrFileIOperTable := range new.strFileIOperTable {
-		if old.strFileIOperTable[key] == nil {
-			fileIODelta[key] = 0
-			old.strFileIOperTable[key] = &FileIOperTable{TableSchema: vStrFileIOperTable.TableSchema, TableName: vStrFileIOperTable.TableName}
+func calcFileIODelta(new *HostAllInfo, old *HostAllInfo) List {
+	ss := List{}
+	for tableNm, vStrFileIOperTable := range new.strFileIOperTable {
+		if old.strFileIOperTable[tableNm] == nil {
+			old.strFileIOperTable[tableNm] = &FileIOperTable{TableSchema: vStrFileIOperTable.TableSchema, TableName: vStrFileIOperTable.TableName}
 		} else {
 			switch SortTableFileIOPosition {
 			case SORTNUM1:
-				fileIODelta[key] = vStrFileIOperTable.CountStar - old.strFileIOperTable[key].CountStar
+				e := Entry{tableNm, vStrFileIOperTable.CountStar - old.strFileIOperTable[tableNm].CountStar}
+				ss = append(ss, e)
 			case SORTNUM2:
-				fileIODelta[key] = vStrFileIOperTable.FetchRows - old.strFileIOperTable[key].FetchRows
+				e := Entry{tableNm, vStrFileIOperTable.FetchRows - old.strFileIOperTable[tableNm].FetchRows}
+				ss = append(ss, e)
 			case SORTNUM3:
-				fileIODelta[key] = vStrFileIOperTable.InsertRows - old.strFileIOperTable[key].InsertRows
+				e := Entry{tableNm, vStrFileIOperTable.InsertRows - old.strFileIOperTable[tableNm].InsertRows}
+				ss = append(ss, e)
 			case SORTNUM4:
-				fileIODelta[key] = vStrFileIOperTable.UpdateRows - old.strFileIOperTable[key].UpdateRows
+				e := Entry{tableNm, vStrFileIOperTable.UpdateRows - old.strFileIOperTable[tableNm].UpdateRows}
+				ss = append(ss, e)
 			case SORTNUM5:
-				fileIODelta[key] = vStrFileIOperTable.DeleteRows - old.strFileIOperTable[key].DeleteRows
+				e := Entry{tableNm, vStrFileIOperTable.DeleteRows - old.strFileIOperTable[tableNm].DeleteRows}
+				ss = append(ss, e)
 			case SORTNUM6:
-				fileIODelta[key] = vStrFileIOperTable.ReadIOByte - old.strFileIOperTable[key].ReadIOByte
+				e := Entry{tableNm, vStrFileIOperTable.ReadIOByte - old.strFileIOperTable[tableNm].ReadIOByte}
+				ss = append(ss, e)
 			case SORTNUM7:
-				fileIODelta[key] = vStrFileIOperTable.WriteIOByte - old.strFileIOperTable[key].WriteIOByte
+				e := Entry{tableNm, vStrFileIOperTable.WriteIOByte - old.strFileIOperTable[tableNm].WriteIOByte}
+				ss = append(ss, e)
 			}
 		}
 	}
-	return fileIODelta
+	return ss
 }
 
 func sortFileIO(new *HostAllInfo, old *HostAllInfo) {
 	//Digest
-	fileIODelta := calcFileIODelta(new, old)
-	ss := List{}
-	for tablename, execnt := range fileIODelta {
-		e := Entry{tablename, execnt}
-		ss = append(ss, e)
-	}
+	ss := calcFileIODelta(new, old)
 	sort.Sort(ss)
-	//new.FileIOMetric = make([]FileIOperTable, TopN)
 	for idx, kv := range ss {
 		if idx >= TopN {
 			break

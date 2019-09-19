@@ -364,6 +364,9 @@ func switchEachInstanceByKeyEvent(ev termbox.Event, screenFlg int) {
 	case ev.Type == termbox.EventKey && ev.Key == termbox.KeyF12:
 		FullSQLStatement = !FullSQLStatement
 	}
+	if (screenFlg == MODEINNOLOCK || screenFlg == MODEFILEIOTABLE) && TopNPosition == -1 {
+		TopNPosition = 0
+	}
 }
 func switchModeByKeyEvent(ev termbox.Event, screenFlg int) int {
 	if screenFlg == MODEOFF {

@@ -908,6 +908,7 @@ func screen(hostInfos []HostAllInfo, screenFlg int, screenHostlist []string, sEl
 		if screenFlg != MODEOFF {
 			drawAll += fmt.Sprintf("%s %s\n", host, hostInfos[ii].screenMetric(screenFlg, ii))
 		} else {
+			hostInfos[ii].topNPosition = ii
 			drawAll += fmt.Sprintf("%s\n", host)
 		}
 	}

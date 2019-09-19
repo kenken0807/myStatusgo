@@ -59,7 +59,7 @@ func (val *HostAllInfo) retrieve(screenFlg int, old *HostAllInfo, baseInfo *Host
 	// InnoDB Row Lock Info Over MySQL5.6
 	//// session can not kill if lots of locks
 	go func() {
-		if screenFlg == MODEINNOLOCK {
+		if screenFlg == MODEINNOLOCK && baseInfo.topNPosition == TopNPosition {
 			val.doExecute(&val.dbErrorPerQuery.lock, 6)
 		}
 		wg.Done()
@@ -89,7 +89,7 @@ func (val *HostAllInfo) retrieve(screenFlg int, old *HostAllInfo, baseInfo *Host
 	}()
 	// Table IO Stastics Info
 	go func() {
-		if screenFlg == MODEFILEIOTABLE {
+		if screenFlg == MODEFILEIOTABLE && baseInfo.topNPosition == TopNPosition {
 			if ok := val.doExecute(&val.dbErrorPerQuery.fileIO, 10); ok == DBERROR {
 				initializeStructIfdbErrorFileIO(old, baseInfo)
 			} else {
