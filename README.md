@@ -103,3 +103,7 @@ $ myStatusgo -h '{"ServiceList":[{"serviceName":"Sample","host":["192.168.0.1:33
 The number of display per instance of Threads ,Performance Schema and Table IO Statistic
 
 ![oss_psinfo](https://user-images.githubusercontent.com/13253434/60561522-c656b980-9d8e-11e9-9147-b2c4edee3351.png)
+
+* -a Option
+show all metrics which retrieved by myStatusgo per server
+<img width="1321" alt="allmetrics" src="https://user-images.githubusercontent.com/13253434/78538796-81cfe100-782c-11ea-9730-a1f568f7442c.png">
