@@ -236,6 +236,16 @@ func (val *HostAllInfo) formatMySQLMetric(idx int) (string, string, string, stri
 		val.Metric[HADRRDPRV],
 		val.Metric[HADRRDRND],
 		val.Metric[HADRRDRNDNXT])
+	if AllShowMetricFlg {
+		vHandler = fmt.Sprintf("%s %17s %17s %17s %17s %17s %17s",
+			vHandler,
+			val.Metric[HADRWRT],
+			val.Metric[HADRUPD],
+			val.Metric[HADRDEL],
+			val.Metric[HADRPREP],
+			val.Metric[HADRCOMT],
+			val.Metric[HADRRB])
+	}
 	vPerf := val.formatPerf()
 	vBuf := val.formatInnoDBBuffer()
 	return vNormal, vHandler, sInfo, vPerf, listDigestText, listThreadText, listInnodbLockText, vBuf, listFileIOTableText
@@ -306,12 +316,37 @@ func (val *HostAllInfo) metricErr() {
 	}
 }
 
-func (val *HostAllInfo) screenMetric(screenFlg int, idx int) string {
+func (val *HostAllInfo) screenMetric(screenFlg int, idx int) (string, string, string, string, string, string, string, string, string, string) {
 	metricColoring(val.Metric)
 	metricColoring(val.MetricOS)
 	val.metricErr()
 	myNormal, myHdlr, mySlv, myPerm, myDigest, myThreads, myInnodbLock, myInnodbBuffer, myFileIOTable := val.formatMySQLMetric(idx)
 	os := val.formatOSMetric()
+	return myNormal, myHdlr, mySlv, myPerm, myDigest, myThreads, myInnodbLock, myInnodbBuffer, myFileIOTable, os
+
+}
+
+func (val *HostAllInfo) screenAllMetric(screenFlg int, idx int) string {
+	myNormal, myHdlr, mySlv, myPerm, myDigest, myThreads, _, myInnodbBuffer, myFileIOTable, os := val.screenMetric(screenFlg, idx)
+	out := modeAllTitleFormat(MODERESOURCE)
+	out += myNormal + os + "\n\n"
+	out += modeAllTitleFormat(MODEROW)
+	out += myHdlr + "\n\n"
+	out += modeAllTitleFormat(MODEINNOBUFFER)
+	out += myInnodbBuffer + "\n\n"
+	out += modeAllTitleFormat(MODETHREADS)
+	out += myThreads + "\n\n"
+	out += modeAllTitleFormat(MODEPERFORMACE)
+	out += myPerm + myDigest + "\n\n"
+	out += modeAllTitleFormat(MODESLAVE)
+	out += mySlv + "\n\n"
+	out += modeAllTitleFormat(MODEFILEIOTABLE)
+	out += myFileIOTable + "\n\n"
+	return out
+}
+
+func (val *HostAllInfo) screenMetricPrepare(screenFlg int, idx int) string {
+	myNormal, myHdlr, mySlv, myPerm, myDigest, myThreads, myInnodbLock, myInnodbBuffer, myFileIOTable, os := val.screenMetric(screenFlg, idx)
 	switch screenFlg {
 	case MODENORMAL:
 		return myNormal
@@ -334,7 +369,6 @@ func (val *HostAllInfo) screenMetric(screenFlg int, idx int) string {
 	}
 	return myNormal
 }
-
 func limitString(v string, maxlen int) string {
 	if maxlen == 0 {
 		return v
@@ -343,6 +377,13 @@ func limitString(v string, maxlen int) string {
 		v = v[:maxlen-1] + "."
 	}
 	return v
+}
+
+func hostNameSpace() string {
+	if AllShowMetricFlg == false {
+		return padS(HostnameSize, " ") + padS(DEFAULTPORTSIZE, " ") + "  "
+	}
+	return ""
 }
 func (val *DigestMetric) formatTopN(idx int) string {
 	length := HostFormatSize + len(INSTANCECURSOR) + PerfFormatSize
@@ -362,7 +403,7 @@ func (val *DigestMetric) formatTopN(idx int) string {
 	}
 	schemaName = limitString(schemaName, 8)
 	if idx != 0 {
-		cursor = padS(HostnameSize, " ") + padS(DEFAULTPORTSIZE, " ") + DIGESTFORMAT0
+		cursor = hostNameSpace() + DIGESTFORMAT0
 		newline = "\n"
 		length = 0
 	}
@@ -394,7 +435,7 @@ func (val *FileIOperTable) formatTopN(idx int) string {
 	miscIOLatency := formatTime(fmt.Sprintf("%d", val.MiscIOLatency))
 
 	if idx != 0 {
-		cursor = padS(HostnameSize, " ") + padS(DEFAULTPORTSIZE, " ") + FILEIOTABFORMAT0
+		cursor = hostNameSpace() + FILEIOTABFORMAT0
 		newline = "\n"
 	}
 	return fmt.Sprintf("%s%s %10s %20s %10d %7s %8d %9s %7d %7s %7d %7s %7d %7s %7d %8s %8s %8d %9s %9s %7d %8s",
@@ -434,7 +475,7 @@ func (val *InnodbLockInfo) formatTopN(idx int) string {
 	lockedIndex := limitString(val.LockedIndex, 30)
 
 	if idx != 0 {
-		cursor = padS(HostnameSize, " ") + padS(DEFAULTPORTSIZE, " ") + INNOLOCKFORMAT0
+		cursor = hostNameSpace() + INNOLOCKFORMAT0
 		newline = "\n"
 		length = 0
 	}
@@ -463,7 +504,7 @@ func (val *ThreadsInfo) formatTopN(idx int) string {
 	cmd := limitString(val.Cmd, 7)
 
 	if idx != 0 {
-		cursor = padS(HostnameSize, " ") + padS(DEFAULTPORTSIZE, " ") + THREADFORMAT0
+		cursor = hostNameSpace() + THREADFORMAT0
 		newline = "\n"
 		length = 0
 	}
@@ -596,13 +637,7 @@ func (val *HostAllInfo) formatSlaveInfoWithColoring() (string, string, string) {
 	return sInfo, normalIoTh, normalSQLTh
 }
 
-func getMetricForFile(now int, old int, title *string, content *string, nowTime string, outputTitle int) string {
-	var out string
-	if now == old && outputTitle != 1 {
-		out = fmt.Sprintf("%s\n%s", nowTime, *content)
-	} else {
-		out = *title + *content
-	}
+func removeColor(out string) string {
 	out = strings.Replace(out, BLUE, "", -1)
 	out = strings.Replace(out, RED, "", -1)
 	out = strings.Replace(out, GREEN, "", -1)
@@ -612,6 +647,16 @@ func getMetricForFile(now int, old int, title *string, content *string, nowTime 
 	out = strings.Replace(out, CYAN, "", -1)
 	out = strings.Replace(out, COLEND, "", -1)
 	return out
+}
+
+func getMetricForFile(now int, old int, title *string, content *string, nowTime string, outputTitle int) string {
+	var out string
+	if now == old && outputTitle != 1 {
+		out = fmt.Sprintf("%s\n%s", nowTime, *content)
+	} else {
+		out = *title + *content
+	}
+	return removeColor(out)
 }
 func flush(title *string, out *string) {
 	var buf string
@@ -644,7 +689,7 @@ func fileIOTableHeaderColoring() string {
 	magenta := color.New(color.FgMagenta).SprintFunc()
 	blue := color.New(color.FgBlue).SprintFunc()
 	str := blue("  Schema")
-	str += blue("        TableName       ")
+	str += blue("    TableName/FileName  ")
 	if SortTableFileIOPosition == SORTNUM1 {
 		str += magenta("AllRequest ")
 	} else {
@@ -770,9 +815,63 @@ func modeHeaderColoring(screenFlg int) string {
 	return buf
 
 }
+func hostTitleFormat() string {
+	var drawTitle string
+	drawTitle += fmt.Sprintf("%s\n", HostNamePortTag)
+	drawTitle += fmt.Sprintf("%s\n", HostNamePort)
+	drawTitle += fmt.Sprintf("%s\n", HostNamePortTag)
+	return drawTitle
+}
+func modeAllTitleFormat(screenFlg int) string {
+	var drawTitle string
+	switch screenFlg {
+	case MODEOFF, MODENORMAL:
+		drawTitle += fmt.Sprintf("%s\n", MyFormat1)
+		drawTitle += fmt.Sprintf("%s\n", MyFormat2)
+		drawTitle += fmt.Sprintf("%s\n", MyFormat3)
+	case MODERESOURCE:
+		drawTitle += fmt.Sprintf("%s %s \n", MyFormat1, OSFormat1)
+		drawTitle += fmt.Sprintf("%s %s \n", MyFormat2, OSFormat2)
+		drawTitle += fmt.Sprintf("%s %s \n", MyFormat3, OSFormat3)
+	case MODETHREADS:
+		drawTitle += fmt.Sprintf("%s %s \n", Cursol1, ThreadFormat1)
+		drawTitle += fmt.Sprintf("%s %s \n", Cursol2, ThreadFormat2)
+		drawTitle += fmt.Sprintf("%s %s \n", Cursol3, ThreadFormat3)
+	case MODEPERFORMACE:
+		drawTitle += fmt.Sprintf("%s %s %s \n", PerfScmFormat1, Cursol1, DigestFormat1)
+		drawTitle += fmt.Sprintf("%s %s %s \n", PerfScmFormat2, Cursol2, DigestFormat2)
+		drawTitle += fmt.Sprintf("%s %s %s \n", PerfScmFormat3, Cursol3, DigestFormat3)
+	case MODESLAVE:
+		sFormat1 := MySlaFormat1
+		sFormat2 := MySlaFormat2
+		sFormat3 := MySlaFormat3
+		if GtidMode {
+			sFormat1 = MySlaFormatGTID1
+			sFormat2 = MySlaFormatGTID2
+			sFormat3 = MySlaFormatGTID3
+		}
+		drawTitle += fmt.Sprintf("%s \n", sFormat1)
+		drawTitle += fmt.Sprintf("%s \n", sFormat2)
+		drawTitle += fmt.Sprintf("%s \n", sFormat3)
+	case MODEROW:
+		drawTitle += fmt.Sprintf(" %s\n", MyHadrAllFormat1)
+		drawTitle += fmt.Sprintf(" %s\n", MyHadrAllFormat2)
+		drawTitle += fmt.Sprintf(" %s\n", MyHadrAllFormat3)
+	case MODEINNOBUFFER:
+		drawTitle += fmt.Sprintf("%s\n", InnoBufFormat1)
+		drawTitle += fmt.Sprintf("%s\n", InnoBufFormat2)
+		drawTitle += fmt.Sprintf("%s\n", InnoBufFormat3)
+	case MODEFILEIOTABLE:
+		drawTitle += fmt.Sprintf("%s\n", FileIOTabFormat4)
+		drawTitle += fmt.Sprintf("%s %s\n", Cursol1, FileIOTabFormat1)
+		drawTitle += fmt.Sprintf("%s %s\n", Cursol2, fileIOTableHeaderColoring())
+		drawTitle += fmt.Sprintf("%s %s\n", Cursol3, FileIOTabFormat3)
+	}
+	return drawTitle
+}
+
 func modeTitleFormat(screenFlg int) string {
 	var drawTitle string
-	drawTitle += modeHeaderColoring(screenFlg)
 	switch screenFlg {
 	case MODEOFF, MODENORMAL:
 		drawTitle += fmt.Sprintf("%s %s\n", HostNamePortTag, MyFormat1)
@@ -848,6 +947,9 @@ func headerColoring() {
 	MyHadrFormat1 = blue("------------ InnoDB Rows ---------- ---------------------------- Handlar -------------------------")
 	MyHadrFormat2 = blue("  read   inserted  updated  deleted  RdFirst   RdKey   RdLast    RdNxt   RdPrev    RdRnd  RdRndNxt")
 	MyHadrFormat3 = blue("-------- -------- -------- -------- -------- -------- -------- -------- -------- -------- --------")
+	MyHadrAllFormat1 = blue("------------ InnoDB Rows ---------- -----------------------------------------------Handlar--------------------------------------------------------------")
+	MyHadrAllFormat2 = blue("  read   inserted  updated  deleted  RdFirst   RdKey   RdLast    RdNxt   RdPrev    RdRnd  RdRndNxt   Write   Update   Delete   Prepare  Commit  Rollback")
+	MyHadrAllFormat3 = blue("-------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- -------- --------")
 	KeyArrowUpDownFormat = white(fmt.Sprintf("  Display per Servers (Select Up[KeyArrowUp] or Down[KeyArrowDown] ) , Display Full SQL by pushing F12 [%v]", FullSQLStatement))
 	perfBuf := "---- performace_schema ----"
 	// Space +1
@@ -870,7 +972,7 @@ func headerColoring() {
 	InnoBufFormat1 = blue("-------------------------------------------------- InnoDB Buffer Pool Info ----------------------------------------------------")
 	InnoBufFormat2 = blue(" Total  Data   Dirty  Free   DataPage DirtyPage  FreePage MiscPag   Read   RdReq  WritReq Writen Create  Flush LSN-CK  HitRate ")
 	InnoBufFormat3 = blue("------ ------ ------ ------ --------- --------- --------- ------- ------- ------- ------- ------ ------ ------ ------ ---------")
-	FileIOTabFormat1 = blue("---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+	FileIOTabFormat1 = blue("---------------------------------------------------------------------------------- Table/File IO Statistics ---------------------------------------------------------------------------------")
 	FileIOTabFormat3 = blue("---------- -------------------- ---------- ------- -------- --------- ------- ------- ------- ------- ------- ------- ------- -------- -------- -------- --------- --------- ------- --------")
 	FileIOTabFormat4 = white("     (Choose Sort Field by [Tab] key)")
 	HostNamePortTag = blue(padS(HostnameSize, "-") + " " + padS(DEFAULTPORTSIZE, "-"))
@@ -881,6 +983,10 @@ func createHeader(screenFlg int) string {
 	var buf string
 	headerColoring()
 	buf += fmt.Sprintf(TopFormat, time.Now().Format(TIMELAYOUT), StartTime.Format(TIMELAYOUT))
+	if AllShowMetricFlg == true {
+		return buf
+	}
+	buf += modeHeaderColoring(screenFlg)
 	buf += modeTitleFormat(screenFlg)
 	return buf
 }
@@ -890,23 +996,36 @@ func (val *HostAllInfo) createHostFormat() string {
 	HostFormatSize = len(buf)
 	return buf
 }
+
 func screen(hostInfos []HostAllInfo, screenFlg int, screenHostlist []string, sElaspTime time.Time) (string, string) {
 	var drawTitle string
 	var drawAll string
 	drawTitle += createHeader(screenFlg)
+	drawBuf := ""
 	// loop all hosts
-
 	for i := 0; i < len(screenHostlist); i++ {
 		// just show the comment lines
 		if strings.Contains(screenHostlist[i], "#") {
-			drawAll += fmt.Sprintf("%s\n", screenHostlist[i])
+			if AllShowMetricFlg == false {
+				drawAll += fmt.Sprintf("%s\n", screenHostlist[i])
+			} else {
+				drawBuf = fmt.Sprintf("%s\n", screenHostlist[i])
+			}
 			continue
 		}
 		ii, _ := strconv.Atoi(screenHostlist[i])
 		// if host find out, formating metric
 		host := hostInfos[ii].createHostFormat()
 		if screenFlg != MODEOFF {
-			drawAll += fmt.Sprintf("%s %s\n", host, hostInfos[ii].screenMetric(screenFlg, ii))
+			if AllShowMetricFlg == false {
+				drawAll += fmt.Sprintf("%s %s\n", host, hostInfos[ii].screenMetricPrepare(screenFlg, ii))
+			} else {
+				if TopNPosition == ii {
+					drawAll += drawBuf
+					drawAll += hostInfos[ii].Hname + ":" + hostInfos[ii].port + "\n"
+					drawAll += hostInfos[ii].screenAllMetric(screenFlg, ii)
+				}
+			}
 		} else {
 			hostInfos[ii].topNPosition = ii
 			drawAll += fmt.Sprintf("%s\n", host)

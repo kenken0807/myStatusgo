@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// VERSION no.
+const VERSION = "1.1"
+
 // StartTime ..
 var StartTime time.Time
 
@@ -62,6 +65,9 @@ var (
 	MyHadrFormat1        string
 	MyHadrFormat2        string
 	MyHadrFormat3        string
+	MyHadrAllFormat1     string
+	MyHadrAllFormat2     string
+	MyHadrAllFormat3     string
 	KeyArrowUpDownFormat string
 	PerfScmFormat1       string
 	PerfScmFormat2       string
@@ -88,6 +94,7 @@ var (
 	HostNamePortTag      string
 	HostFormatSize       int
 	PerfFormatSize       int
+	AllShowMetricFlg     bool
 )
 
 const (
@@ -161,6 +168,12 @@ const (
 	HADRRDPRV     = "Handler_read_prev"
 	HADRRDRND     = "Handler_read_rnd"
 	HADRRDRNDNXT  = "Handler_read_rnd_next"
+	HADRDEL       = "Handler_delete"
+	HADRUPD       = "Handler_update"
+	HADRWRT       = "Handler_write"
+	HADRPREP      = "Handler_prepare"
+	HADRCOMT      = "Handler_commit"
+	HADRRB        = "Handler_rollback"
 	INNOROWDEL    = "Innodb_rows_deleted"
 	INNOROWRD     = "Innodb_rows_read"
 	INNOROWINS    = "Innodb_rows_inserted"
@@ -299,57 +312,58 @@ const (
 							WHERE NAME in ('buffer_pool_pages_total','buffer_pool_bytes_dirty','buffer_pool_bytes_data','buffer_pool_pages_free', 'log_lsn_checkpoint_age') */`
 
 	TableFileIOSQL = `/*!50601 SELECT 'myStatusgo.TableFileIOSQL' as mystatusgoquery ,
-	                    pst.OBJECT_SCHEMA AS tableSchema,
-						pst.OBJECT_NAME AS tableName,
-						ifnull(pst.COUNT_STAR,0) + ifnull(fsbi.cntstar,0) as countStar,
-						pst.SUM_TIMER_WAIT AS totalLatency,
-						pst.COUNT_FETCH AS fetchRows,
-						pst.SUM_TIMER_FETCH AS fetchLatency,
-						pst.COUNT_INSERT AS insertRows,
-						pst.SUM_TIMER_INSERT AS insertLatency,
-						pst.COUNT_UPDATE AS updateRows,
-						pst.SUM_TIMER_UPDATE AS updateLatency,
-						pst.COUNT_DELETE AS deleteRows,
-						pst.SUM_TIMER_DELETE AS deleteLatency,
-						fsbi.count_read AS readIORequest,
-						fsbi.sum_number_of_bytes_read AS readIOByte,
-						fsbi.sum_timer_read AS readIOLatency,
-						fsbi.count_write AS writeIORequest,
-						fsbi.sum_number_of_bytes_write AS writeIOByte,
-						fsbi.sum_timer_write AS writeIOLatency,
-						fsbi.count_misc AS miscIORequest,
-						fsbi.sum_timer_misc AS miscIOLatency
-						from
-						(
-							performance_schema.table_io_waits_summary_by_table pst
-							left join (select
-								LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -2), '/', 1), 64) AS table_schema,
-								-- LEFT(SUBSTRING_INDEX(REPLACE(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -1), '@0024', '$'), '.', 1), 64) AS table_name,
-								LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -1), '@0024', '$'), '.', 1),'#',1), 64) AS table_name,
-								sum(fsbi.COUNT_STAR) as cntstar,
-								sum(fsbi.COUNT_READ) AS count_read,
-								sum(fsbi.SUM_NUMBER_OF_BYTES_READ) AS sum_number_of_bytes_read,
-								sum(fsbi.SUM_TIMER_READ) AS sum_timer_read,
-								sum(fsbi.COUNT_WRITE) AS count_write,
-								sum(fsbi.SUM_NUMBER_OF_BYTES_WRITE) AS sum_number_of_bytes_write,
-								sum(fsbi.SUM_TIMER_WRITE) AS sum_timer_write,
-								sum(fsbi.COUNT_MISC) AS count_misc,
-								sum(fsbi.SUM_TIMER_MISC) AS sum_timer_misc
-								from
-								performance_schema.file_summary_by_instance fsbi
-								WHERE COUNT_STAR > 0 
-								and LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -2), '/', 1), 64) not in ('performance_schema','sys','mysql')
-								group by
-								table_schema,
-								table_name) fsbi 
-								on(
-									(
-										(pst.OBJECT_SCHEMA = fsbi.table_schema)
-										and (pst.OBJECT_NAME = fsbi.table_name)
-									)
-								)
-							)
-							WHERE pst.OBJECT_SCHEMA not in ('performance_schema','sys','mysql') */`
+	fsbi.table_schema AS tableSchema,
+fsbi.table_name  AS tableName,
+ifnull(pst.COUNT_STAR,0) + ifnull(fsbi.cntstar,0) as countStar,
+ifnull(pst.SUM_TIMER_WAIT,0) AS totalLatency,
+ifnull(pst.COUNT_FETCH,0) AS fetchRows,
+ifnull(pst.SUM_TIMER_FETCH,0) AS fetchLatency,
+ifnull(pst.COUNT_INSERT,0) AS insertRows,
+ifnull(pst.SUM_TIMER_INSERT,0) AS insertLatency,
+ifnull(pst.COUNT_UPDATE,0) AS updateRows,
+ifnull(pst.SUM_TIMER_UPDATE,0) AS updateLatency,
+ifnull(pst.COUNT_DELETE,0) AS deleteRows,
+ifnull(pst.SUM_TIMER_DELETE,0) AS deleteLatency,
+fsbi.count_read AS readIORequest,
+fsbi.sum_number_of_bytes_read AS readIOByte,
+fsbi.sum_timer_read AS readIOLatency,
+fsbi.count_write AS writeIORequest,
+fsbi.sum_number_of_bytes_write AS writeIOByte,
+fsbi.sum_timer_write AS writeIOLatency,
+fsbi.count_misc AS miscIORequest,
+fsbi.sum_timer_misc AS miscIOLatency
+from
+(
+select
+LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -2), '/', 1), 64) AS table_schema,
+-- LEFT(SUBSTRING_INDEX(REPLACE(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -1), '@0024', '$'), '.', 1), 64) AS table_name,
+LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -1), '@0024', '$'), '.', 1),'#',1), 64) AS table_name,
+sum(fsbi.COUNT_STAR) as cntstar,
+sum(fsbi.COUNT_READ) AS count_read,
+sum(fsbi.SUM_NUMBER_OF_BYTES_READ) AS sum_number_of_bytes_read,
+sum(fsbi.SUM_TIMER_READ) AS sum_timer_read,
+sum(fsbi.COUNT_WRITE) AS count_write,
+sum(fsbi.SUM_NUMBER_OF_BYTES_WRITE) AS sum_number_of_bytes_write,
+sum(fsbi.SUM_TIMER_WRITE) AS sum_timer_write,
+sum(fsbi.COUNT_MISC) AS count_misc,
+sum(fsbi.SUM_TIMER_MISC) AS sum_timer_misc
+from
+performance_schema.file_summary_by_instance fsbi
+WHERE COUNT_STAR > 0 
+and LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(fsbi.FILE_NAME, '\\', '/'), '/', -2), '/', 1), 64) not in ('performance_schema','sys','mysql')
+group by
+table_schema,
+table_name
+ORDER BY NULL
+) fsbi 
+LEFT JOIN
+(SELECT OBJECT_SCHEMA,OBJECT_NAME,COUNT_STAR,SUM_TIMER_WAIT,COUNT_FETCH,SUM_TIMER_FETCH,COUNT_INSERT,SUM_TIMER_INSERT,COUNT_UPDATE,SUM_TIMER_UPDATE,COUNT_DELETE,SUM_TIMER_DELETE
+FROM performance_schema.table_io_waits_summary_by_table pst WHERE pst.OBJECT_SCHEMA not in ('performance_schema','sys','mysql','PERCONA_SCHEMA') LIMIT 10000) pst
+ON
+pst.OBJECT_SCHEMA = fsbi.table_schema
+and pst.OBJECT_NAME = fsbi.table_name 
+*/`
+
 	SLOWCHECKSQL = `/*!50601 SELECT count(1) FROM performance_schema.threads 
 	                      WHERE PROCESSLIST_COMMAND='QUERY' and PROCESSLIST_TIME > 0 and PROCESSLIST_INFO like '%%%s%%' */`
 	FILEIOCHECKSLOW     = "myStatusgo.TableFileIOSQL"
@@ -394,10 +408,10 @@ const (
 	DBERROR             = true
 	DBOK                = false
 	MYSLAFORMATSPACE    = "                                                                                                                                                                                      "
-	DIGESTFORMAT0       = "                              *"
-	THREADFORMAT0       = "  *"
-	INNOLOCKFORMAT0     = "  *"
-	FILEIOTABFORMAT0    = "  *"
+	DIGESTFORMAT0       = "                            *"
+	THREADFORMAT0       = "*"
+	INNOLOCKFORMAT0     = "*"
+	FILEIOTABFORMAT0    = "*"
 	INSTANCECURSOR      = "*"
 	TryCountDBError     = 2
 	WaitCountDBError    = TryCountDBError + 60
@@ -415,32 +429,33 @@ type HostAllInfo struct {
 	Hname                          string
 	port                           string
 	alias                          string
-	dbuser                         string
-	dbpasswd                       string
-	promPort                       int
-	dberror                        bool
-	promeerror                     int
-	db                             *sql.DB
-	dbErrorPerQuery                dbErrorPerQuery
-	topNPosition                   int
-	PromeParam                     mapProme `json:"-"`
-	MySlave                        mapMy    `json:"-"`
-	MyStatu                        mapMy    `json:"-"`
-	MyVariable, MyPerfomanceSchema mapMy
-	MyInnoDBBuffer                 mapInnoDBBuffer
-	DigestBase                     mapDigest `json:"-"` // 最初に全件取得するやつ
-	Digest                         mapDigest `json:"-"` // WHERE LAST_SEEN > now() - 1 を保管
-	DigestALLSqlCnt                string
+	dbuser                         string          `json:"-"`
+	dbpasswd                       string          `json:"-"`
+	promPort                       int             `json:"-"`
+	dberror                        bool            `json:"-"`
+	promeerror                     int             `json:"-"`
+	db                             *sql.DB         `json:"-"`
+	dbErrorPerQuery                dbErrorPerQuery `json:"-"`
+	topNPosition                   int             `json:"-"`
+	PromeParam                     mapProme        `json:"-"`
+	MySlave                        mapMy           `json:"-"`
+	MyStatu                        mapMy           `json:"-"`
+	MyVariable, MyPerfomanceSchema mapMy           `json:"-"`
+	MyInnoDBBuffer                 mapInnoDBBuffer `json:"-"`
+	DigestBase                     mapDigest       `json:"-"` // 最初に全件取得するやつ
+	Digest                         mapDigest       `json:"-"` // WHERE LAST_SEEN > now() - 1 を保管
+	DigestALLSqlCnt                string          `json:"-"`
 	DigestMetric                   []DigestMetric
 	ThreadsInfo                    []ThreadsInfo
-	InnodbLockInfo                 []InnodbLockInfo
-	strFileIOperTable              mapStrFileIOperTable
-	FileIOMetric                   []FileIOperTable
-	Metric                         mapPrint `json:"-"`
-	MetricOS                       mapPrint `json:"-"`
-	MetricJSON                     mapPrint
-	slowSum                        int64
+	InnodbLockInfo                 []InnodbLockInfo     `json:"-"`
+	strFileIOperTable              mapStrFileIOperTable `json:"-"`
+	FileIOMetric                   []FileIOperTable     `json:"-"`
+	Metric                         mapPrint
+	MetricOS                       mapPrint
+	MetricJSON                     mapPrint `json:"-"`
+	slowSum                        int64    `json:"-"`
 	SlaveInfo                      []SlaveInfo
+	ExecTime                       string
 }
 
 type Options struct {
@@ -457,6 +472,8 @@ type Options struct {
 	queryLength int
 	outputJSON  bool
 	gtid        bool
+	all         bool
+	version     bool
 }
 
 type sortDigestCnt struct {

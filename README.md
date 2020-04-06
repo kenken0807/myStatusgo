@@ -65,8 +65,9 @@ $ myStatusgo hostlist
 ## Options
 ```
 Usage of myStatusgo:
+  -a	Show All metrics per server
   -c int
-    	Seconds of Auto stop
+    	Seconds of Automatic Stopping
   -d int
     	Delay between updates in seconds (default 1)
   -g	Gtid Mode at 5:SlaveStatus
@@ -87,6 +88,7 @@ Usage of myStatusgo:
     	The number of display per instance of Threads ,Performance Schema and Table IO Statistic  (default 10)
   -u string
     	MySQL Username
+  -v	Show Version
 ```
 
 ## Other

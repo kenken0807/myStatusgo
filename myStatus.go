@@ -15,6 +15,10 @@ import (
 )
 
 func run(Opt *Options) int {
+	if Opt.version {
+		fmt.Println("myStatusgo version " + VERSION)
+		return 0
+	}
 	if Opt.dbUser == "" || Opt.dbPasswd == "" {
 		fmt.Println("Set Username[-u] and Password[-p]")
 		return -1
@@ -27,11 +31,11 @@ func run(Opt *Options) int {
 
 	var err error
 	// Global Variables
-	TopN = Opt.digest
 	OutputJSON = Opt.outputJSON
 	MaxTopNPosition = 0
 	GtidMode = Opt.gtid
 	HostnameSize = DEFAULTHOSTNAMESIZE
+	AllShowMetricFlg = Opt.all
 	if Opt.interval < 1 {
 		Opt.interval = 1
 	}
@@ -120,7 +124,13 @@ func run(Opt *Options) int {
 	beforeScreenFlg := beforeScreenFlg()
 	outputTitleforFile := outputforTitle()
 	execCounter := 1
-	TopNPosition = -1
+	if AllShowMetricFlg == false {
+		TopNPosition = -1
+		TopN = Opt.digest
+	} else {
+		TopNPosition = 0
+		TopN = 5
+	}
 	SortTableFileIOPosition = 1
 
 	// Create OutPut File
@@ -142,7 +152,6 @@ func run(Opt *Options) int {
 	// Main Loop
 	baseInfo := hostInfos1
 	var hostInfos, hostInfosOld []HostAllInfo
-	_, _ = screen(hostInfos1, screenFlg, screenHostlist, StartTime)
 	for {
 		select {
 		case <-t.C:
@@ -165,6 +174,7 @@ func run(Opt *Options) int {
 					hostInfos[ii].initializeStruct(&hostInfosOld[ii])
 					hostInfos[ii].retrieve(screenFlg, &hostInfosOld[ii], &baseInfo[ii])
 					hostInfos[ii].calculate(screenFlg, &hostInfosOld[ii])
+					hostInfos[ii].ExecTime = time.Now().Format(TIMELAYOUT)
 					wg.Done()
 				}(i)
 			}
@@ -178,8 +188,13 @@ func run(Opt *Options) int {
 					fmt.Fprintln(outputFile, getMetricForFile(screenFlg, beforeScreenFlg(screenFlg), &title, &out, sElaspTime.Format(TIMELAYOUT), outputTitleforFile(1)))
 				}
 			}
+
 			if screenFlg == MODEOFF {
-				screenFlg = Opt.modeflg
+				if AllShowMetricFlg == false {
+					screenFlg = Opt.modeflg
+				} else {
+					screenFlg = MODEFILEIOTABLE
+				}
 			}
 			execCounter++
 		case ev := <-eventQueue:
@@ -347,15 +362,15 @@ func switchEachInstanceByKeyEvent(ev termbox.Event, screenFlg int) {
 		return
 	}
 	switch {
-	case ev.Type == termbox.EventKey && (screenFlg == MODETHREADS || screenFlg == MODEPERFORMACE || screenFlg == MODEINNOLOCK || screenFlg == MODEFILEIOTABLE) && ev.Key == termbox.KeyArrowDown:
+	case ev.Type == termbox.EventKey && (screenFlg == MODETHREADS || screenFlg == MODEPERFORMACE || screenFlg == MODEINNOLOCK || screenFlg == MODEFILEIOTABLE || AllShowMetricFlg) && ev.Key == termbox.KeyArrowDown:
 		if TopNPosition < MaxTopNPosition-1 {
 			TopNPosition++
 		}
-	case ev.Type == termbox.EventKey && (screenFlg == MODETHREADS || screenFlg == MODEPERFORMACE || screenFlg == MODEINNOLOCK || screenFlg == MODEFILEIOTABLE) && ev.Key == termbox.KeyArrowUp:
+	case ev.Type == termbox.EventKey && (screenFlg == MODETHREADS || screenFlg == MODEPERFORMACE || screenFlg == MODEINNOLOCK || screenFlg == MODEFILEIOTABLE || AllShowMetricFlg) && ev.Key == termbox.KeyArrowUp:
 		if TopNPosition > -1 {
 			TopNPosition--
 		}
-	case ev.Type == termbox.EventKey && ev.Key == termbox.KeyTab && screenFlg == MODEFILEIOTABLE:
+	case ev.Type == termbox.EventKey && ev.Key == termbox.KeyTab && (screenFlg == MODEFILEIOTABLE || AllShowMetricFlg):
 		if SortTableFileIOPosition == SORTNUMMAX {
 			SortTableFileIOPosition = SORTNUM1
 		} else {
@@ -371,6 +386,9 @@ func switchEachInstanceByKeyEvent(ev termbox.Event, screenFlg int) {
 func switchModeByKeyEvent(ev termbox.Event, screenFlg int) int {
 	if screenFlg == MODEOFF {
 		return MODEOFF
+	}
+	if AllShowMetricFlg == true {
+		return MODEFILEIOTABLE
 	}
 	switch {
 	case ev.Type == termbox.EventKey && ev.Key == termbox.KeyF1:
