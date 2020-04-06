@@ -45,5 +45,7 @@ func parseOptions(Opt *Options) {
 	flag.StringVar(&Opt.file, "o", "", "Write the content to file and will set autostop 3600 secs")
 	flag.BoolVar(&Opt.outputJSON, "j", false, "Write as JSON to file with option -o")
 	flag.BoolVar(&Opt.gtid, "g", false, "Gtid Mode at 5:SlaveStatus")
+	flag.BoolVar(&Opt.all, "a", false, "Show All metrics per server")
+	flag.BoolVar(&Opt.version, "v", false, "Show Version")
 	flag.Parse()
 }

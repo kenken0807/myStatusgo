@@ -110,6 +110,14 @@ func metricCalc(val *HostAllInfo, old *HostAllInfo) {
 	val.Metric[HADRRDPRV] = chkminus(changeStr2Int(val.MyStatu[HADRRDPRV]) - changeStr2Int(old.MyStatu[HADRRDPRV]))
 	val.Metric[HADRRDRND] = chkminus(changeStr2Int(val.MyStatu[HADRRDRND]) - changeStr2Int(old.MyStatu[HADRRDRND]))
 	val.Metric[HADRRDRNDNXT] = chkminus(changeStr2Int(val.MyStatu[HADRRDRNDNXT]) - changeStr2Int(old.MyStatu[HADRRDRNDNXT]))
+
+	val.Metric[HADRDEL] = chkminus(changeStr2Int(val.MyStatu[HADRDEL]) - changeStr2Int(old.MyStatu[HADRDEL]))
+	val.Metric[HADRUPD] = chkminus(changeStr2Int(val.MyStatu[HADRUPD]) - changeStr2Int(old.MyStatu[HADRUPD]))
+	val.Metric[HADRWRT] = chkminus(changeStr2Int(val.MyStatu[HADRWRT]) - changeStr2Int(old.MyStatu[HADRWRT]))
+	val.Metric[HADRPREP] = chkminus(changeStr2Int(val.MyStatu[HADRPREP]) - changeStr2Int(old.MyStatu[HADRPREP]))
+	val.Metric[HADRCOMT] = chkminus(changeStr2Int(val.MyStatu[HADRCOMT]) - changeStr2Int(old.MyStatu[HADRCOMT]))
+	val.Metric[HADRRB] = chkminus(changeStr2Int(val.MyStatu[HADRRB]) - changeStr2Int(old.MyStatu[HADRRB]))
+
 	val.Metric[INNOROWDEL] = chkminus(changeStr2Int(val.MyStatu[INNOROWDEL]) - changeStr2Int(old.MyStatu[INNOROWDEL]))
 	val.Metric[INNOROWRD] = chkminus(changeStr2Int(val.MyStatu[INNOROWRD]) - changeStr2Int(old.MyStatu[INNOROWRD]))
 	val.Metric[INNOROWINS] = chkminus(changeStr2Int(val.MyStatu[INNOROWINS]) - changeStr2Int(old.MyStatu[INNOROWINS]))
@@ -179,6 +187,8 @@ func sortFileIO(new *HostAllInfo, old *HostAllInfo) {
 	//Digest
 	ss := calcFileIODelta(new, old)
 	sort.Sort(ss)
+
+	//new.FileIOMetric = make([]FileIOperTable, TopN)
 	for idx, kv := range ss {
 		if idx >= TopN {
 			break

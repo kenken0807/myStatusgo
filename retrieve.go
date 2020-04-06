@@ -23,7 +23,7 @@ func (val *HostAllInfo) retrieve(screenFlg int, old *HostAllInfo, baseInfo *Host
 	wg.Add(8)
 	// OS metric
 	go func() {
-		if screenFlg == MODERESOURCE && val.promPort != 0 {
+		if val.promPort != 0 {
 			val.getOsMetric()
 		}
 		wg.Done()
@@ -380,7 +380,7 @@ func showStatusCompare(variableName string, value string) bool {
 	switch variableName {
 	case THCON, THRUN, ABORTCON, SLWLOG, CSEL, CUPDMUL, CUPD, CINSSEL, CINS, CDELMUL, CDEL, CRLCESEL, CRLCE, QCACHHIT, CCALPROCEDURE, CSTMT, CCOMMIT, CROLLBACK:
 		return true
-	case HADRRDFIRST, HADRRDKEY, HADRRDLAST, HADRRDNXT, HADRRDPRV, HADRRDRND, HADRRDRNDNXT, INNOROWDEL, INNOROWRD, INNOROWINS, INNOROWUPD, PSDIGESTLOST:
+	case HADRRDFIRST, HADRRDKEY, HADRRDLAST, HADRRDNXT, HADRRDPRV, HADRRDRND, HADRRDRNDNXT, HADRDEL, HADRUPD, HADRWRT, HADRPREP, HADRCOMT, HADRRB, INNOROWDEL, INNOROWRD, INNOROWINS, INNOROWUPD, PSDIGESTLOST:
 		return true
 	case BUFWRITEREQ, BUFREADREQ, BUFREAD, BUFCREATED, BUFWRITTEN, BUFFLUSH, BUFDATAP, BUFDIRTYP, BUFFREEP, BUFMISCP, BUFTOTALP:
 		return true
@@ -404,7 +404,7 @@ func (val *HostAllInfo) sqlExecShowStatus() (bool, string) {
 			continue
 		}
 		// if add status val, count the value
-		if len(mapBuf) == 41 {
+		if len(mapBuf) == 47 {
 			break
 		}
 		if showStatusCompare(vName, value) {
