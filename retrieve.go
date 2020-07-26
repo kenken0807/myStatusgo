@@ -35,11 +35,11 @@ func (val *HostAllInfo) retrieve(screenFlg int, old *HostAllInfo, baseInfo *Host
 		wg.Done()
 	}()
 
-	// Show Slave Status
+	// Show Subordinate Status
 	// Show Global Status
 	// Show Variables
 	go func() {
-		val.doExecute(&val.dbErrorPerQuery.slave, 1)
+		val.doExecute(&val.dbErrorPerQuery.subordinate, 1)
 		val.doExecute(&val.dbErrorPerQuery.status, 2)
 		val.doExecute(&val.dbErrorPerQuery.variables, 3)
 		wg.Done()
@@ -129,7 +129,7 @@ func (val *HostAllInfo) doExecute(dbError *dbError, id int) bool {
 	var errMessage string
 	switch id {
 	case 1:
-		errStatus, errMessage = val.sqlExecSlaveStatus()
+		errStatus, errMessage = val.sqlExecSubordinateStatus()
 	case 2:
 		errStatus, errMessage = val.sqlExecShowStatus()
 	case 3:
@@ -443,11 +443,11 @@ func (val *HostAllInfo) sqlExecShowVariables() (bool, string) {
 	return DBOK, ""
 }
 
-func (val *HostAllInfo) sqlExecSlaveStatus() (bool, string) {
+func (val *HostAllInfo) sqlExecSubordinateStatus() (bool, string) {
 	var rows *sql.Rows
 	var err error
 	db := val.db
-	rows, err = db.Query(ShowSlaveStatusSQL)
+	rows, err = db.Query(ShowSubordinateStatusSQL)
 	if err != nil {
 		return checkMysqlErr(err)
 	}
@@ -455,7 +455,7 @@ func (val *HostAllInfo) sqlExecSlaveStatus() (bool, string) {
 	cols, _ := rows.Columns()
 	printNormalModeSecndBhMas := 0
 	m.Lock()
-	val.SlaveInfo = make([]SlaveInfo, 0)
+	val.SubordinateInfo = make([]SubordinateInfo, 0)
 	for rows.Next() {
 		scanArgs := make([]interface{}, len(cols))
 		for i := range scanArgs {
@@ -469,11 +469,11 @@ func (val *HostAllInfo) sqlExecSlaveStatus() (bool, string) {
 		if i > printNormalModeSecndBhMas {
 			printNormalModeSecndBhMas = i
 		}
-		val.MySlave[SECBEHMAS] = fmt.Sprintf("%d", printNormalModeSecndBhMas)
-		val.SlaveInfo = append(val.SlaveInfo, SlaveInfo{
+		val.MySubordinate[SECBEHMAS] = fmt.Sprintf("%d", printNormalModeSecndBhMas)
+		val.SubordinateInfo = append(val.SubordinateInfo, SubordinateInfo{
 			Host:          columnValue(scanArgs, cols, MHOST),
-			SlaveIO:       columnValue(scanArgs, cols, SLAVEIO),
-			SlaveSQL:      columnValue(scanArgs, cols, SLAVESQL),
+			SubordinateIO:       columnValue(scanArgs, cols, SLAVEIO),
+			SubordinateSQL:      columnValue(scanArgs, cols, SLAVESQL),
 			MsLogFile:     columnValue(scanArgs, cols, MASLOGFILE),
 			RMasLogPos:    columnValue(scanArgs, cols, RMASLOGPOS),
 			RelMasLogFile: columnValue(scanArgs, cols, RELMASLOGFILE),
@@ -635,7 +635,7 @@ func (val *HostAllInfo) sqlExecThreads() (bool, string) {
 			continue
 		}
 		if len(sql) < 1 {
-			if state == "Slave has read all relay log; waiting for more updates" {
+			if state == "Subordinate has read all relay log; waiting for more updates" {
 				continue
 			}
 		}

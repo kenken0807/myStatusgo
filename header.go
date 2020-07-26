@@ -127,14 +127,14 @@ const (
 	LOADAVG5  = "node_load5"
 	LOADAVG15 = "node_load15"
 	// SHOW SLAVE STATUS
-	MHOST         = "Master_Host"
-	SLAVEIO       = "Slave_IO_Running"
-	SLAVESQL      = "Slave_SQL_Running"
-	MASLOGFILE    = "Master_Log_File"
-	RMASLOGPOS    = "Read_Master_Log_Pos"
-	RELMASLOGFILE = "Relay_Master_Log_File"
-	EXEMASLOGPOS  = "Exec_Master_Log_Pos"
-	SECBEHMAS     = "Seconds_Behind_Master"
+	MHOST         = "Main_Host"
+	SLAVEIO       = "Subordinate_IO_Running"
+	SLAVESQL      = "Subordinate_SQL_Running"
+	MASLOGFILE    = "Main_Log_File"
+	RMASLOGPOS    = "Read_Main_Log_Pos"
+	RELMASLOGFILE = "Relay_Main_Log_File"
+	EXEMASLOGPOS  = "Exec_Main_Log_Pos"
+	SECBEHMAS     = "Seconds_Behind_Main"
 	CHNLNM        = "Channel_Name"
 	RETVGTID      = "Retrieved_Gtid_Set"
 	EXEGTID       = "Executed_Gtid_Set"
@@ -199,8 +199,8 @@ const (
 	LSNMINUSCKPOINT = "log_lsn_checkpoint_age"
 	//SHOW GLOBAL VARIABLES
 	RDONLY     = "read_only"
-	RPLSEMIMAS = "rpl_semi_sync_master_enabled"
-	RPLSEMISLV = "rpl_semi_sync_slave_enabled"
+	RPLSEMIMAS = "rpl_semi_sync_main_enabled"
+	RPLSEMISLV = "rpl_semi_sync_subordinate_enabled"
 	// Other
 	PSDIGESTALLSQL     = "Performance_schema_digest_allquery"
 	SQLCNT             = "Performance_schema.sqlcnt"
@@ -208,9 +208,9 @@ const (
 	MAXLATENCY         = "Performance_schema.maxlatency"
 	BUFFHITRATE        = "Bufferpool_hitrate"
 	ShowStatusSQL      = "SHOW GLOBAL STATUS"
-	ShowSlaveStatusSQL = "SHOW SLAVE STATUS"
+	ShowSubordinateStatusSQL = "SHOW SLAVE STATUS"
 
-	ShowVariableSQL = `SHOW VARIABLES WHERE Variable_name='read_only' or Variable_name='rpl_semi_sync_slave_enabled' or Variable_name='rpl_semi_sync_master_enabled'`
+	ShowVariableSQL = `SHOW VARIABLES WHERE Variable_name='read_only' or Variable_name='rpl_semi_sync_subordinate_enabled' or Variable_name='rpl_semi_sync_main_enabled'`
 	DigestFirstSQL  = `/*!50601 SELECT 'myStatusgo.DigestTextSQL' as mystatusgoquery,  
 						concat(schema_name,'|',DIGEST) schema_digest, COUNT_STAR FROM performance_schema.events_statements_summary_by_digest 
 						WHERE SCHEMA_NAME not in ('mysql','sys','information_schema','performance_schema') 
@@ -244,7 +244,7 @@ const (
 		INNER JOIN performance_schema.events_statements_current t2 
 		ON t2.thread_id = t1.thread_id  WHERE t1.PROCESSLIST_COMMAND != 'Sleep' AND EVENT_NAME not in ('statement/com/Binlog Dump','statement/com/Binlog Dump GTID')*/`
 	ThreadsSQL = `/*!50601 SELECT 'myStatusgo.ThreadsSQL' as mystatusgoquery,
-						CASE NAME WHEN 'thread/sql/slave_sql' THEN 'slave' ELSE PROCESSLIST_USER END as PROCESSLIST_USER,
+						CASE NAME WHEN 'thread/sql/subordinate_sql' THEN 'subordinate' ELSE PROCESSLIST_USER END as PROCESSLIST_USER,
 						PROCESSLIST_HOST ,
 						ifnull(PROCESSLIST_DB,'NULL') ,
 						PROCESSLIST_TIME ,
@@ -253,7 +253,7 @@ const (
 						PROCESSLIST_STATE 
 						 FROM performance_schema.threads 
 						WHERE TYPE='FOREGROUND' 
-						      AND NAME in ('thread/sql/one_connection','thread/thread_pool/tp_one_connection','thread/sql/slave_sql')
+						      AND NAME in ('thread/sql/one_connection','thread/thread_pool/tp_one_connection','thread/sql/subordinate_sql')
 							  AND ifnull(PROCESSLIST_DB,'none') not in ('mysql')
 							  AND PROCESSLIST_COMMAND not in('Sleep','Binlog Dump') 
 							  AND PROCESSLIST_ID != @@pseudo_thread_id 
@@ -438,7 +438,7 @@ type HostAllInfo struct {
 	dbErrorPerQuery                dbErrorPerQuery `json:"-"`
 	topNPosition                   int             `json:"-"`
 	PromeParam                     mapProme        `json:"-"`
-	MySlave                        mapMy           `json:"-"`
+	MySubordinate                        mapMy           `json:"-"`
 	MyStatu                        mapMy           `json:"-"`
 	MyVariable, MyPerfomanceSchema mapMy           `json:"-"`
 	MyInnoDBBuffer                 mapInnoDBBuffer `json:"-"`
@@ -454,7 +454,7 @@ type HostAllInfo struct {
 	MetricOS                       mapPrint
 	MetricJSON                     mapPrint `json:"-"`
 	slowSum                        int64    `json:"-"`
-	SlaveInfo                      []SlaveInfo
+	SubordinateInfo                      []SubordinateInfo
 	ExecTime                       string
 }
 
@@ -512,10 +512,10 @@ type InnodbLockInfo struct {
 	WaitCnt       string
 }
 
-type SlaveInfo struct {
+type SubordinateInfo struct {
 	Host          string `json:"Host"`
-	SlaveIO       string `json:"SlaveIO"`
-	SlaveSQL      string `json:"SlaveSQL"`
+	SubordinateIO       string `json:"SubordinateIO"`
+	SubordinateSQL      string `json:"SubordinateSQL"`
 	MsLogFile     string `json:"MsLogFile"`
 	RMasLogPos    string `json:"RMasLogPos"`
 	RelMasLogFile string `json:"RelMasLogFile"`
@@ -558,7 +558,7 @@ type FileIOperTable struct {
 }
 
 type dbErrorPerQuery struct {
-	slave      dbError
+	subordinate      dbError
 	status     dbError
 	variables  dbError
 	perf       dbError

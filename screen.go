@@ -201,8 +201,8 @@ func formatErr(dbError dbError, dberror bool, instanceType bool) string {
 }
 func (val *HostAllInfo) formatMySQLMetric(idx int) (string, string, string, string, string, string, string, string, string) {
 	listDigestText, listThreadText, listInnodbLockText, listFileIOTableText := val.formatDetailEachInstance(idx)
-	// show slave status
-	sInfo, normalIoTh, normalSQLTh := val.formatSlaveInfoWithColoring()
+	// show subordinate status
+	sInfo, normalIoTh, normalSQLTh := val.formatSubordinateInfoWithColoring()
 	vNormal := fmt.Sprintf("%13s %12s %14s %15s %15s %15s %15s %16s %15s %13s %15s %16s %15s %14s %13s %13s %13s %15s %12s %12s",
 		val.Metric[THCON],
 		val.Metric[THRUN],
@@ -539,66 +539,66 @@ func getStringUntilWidth(str string, length int) string {
 	}
 	return str
 }
-func (val *HostAllInfo) formatSlaveInfoWithColoring() (string, string, string) {
+func (val *HostAllInfo) formatSubordinateInfoWithColoring() (string, string, string) {
 	red := color.New(color.FgRed).SprintFunc()
 	white := color.New(color.FgWhite).SprintFunc()
-	sInfo := formatErr(val.dbErrorPerQuery.slave, val.dberror, false)
+	sInfo := formatErr(val.dbErrorPerQuery.subordinate, val.dberror, false)
 	normalIoTh := white(" ")
 	normalSQLTh := white(" ")
 	if sInfo != "" {
 		return sInfo, normalIoTh, normalSQLTh
 	}
-	if len(val.SlaveInfo) > 0 {
+	if len(val.SubordinateInfo) > 0 {
 		normalIoTh = white("Yes")
 		normalSQLTh = white("Yes")
 	}
-	for _, SlaveInfo := range val.SlaveInfo {
+	for _, SubordinateInfo := range val.SubordinateInfo {
 		iothread := ""
 		sqlthread := ""
-		secbhdmaster := ""
-		if strings.Contains(SlaveInfo.SlaveIO, "Yes") {
-			iothread = white(SlaveInfo.SlaveIO)
+		secbhdmain := ""
+		if strings.Contains(SubordinateInfo.SubordinateIO, "Yes") {
+			iothread = white(SubordinateInfo.SubordinateIO)
 		} else {
-			iothread = red(limitString(SlaveInfo.SlaveIO, 3))
-			normalIoTh = red(limitString(SlaveInfo.SlaveIO, 3))
+			iothread = red(limitString(SubordinateInfo.SubordinateIO, 3))
+			normalIoTh = red(limitString(SubordinateInfo.SubordinateIO, 3))
 		}
-		if strings.Contains(SlaveInfo.SlaveSQL, "Yes") {
-			sqlthread = white(SlaveInfo.SlaveSQL)
+		if strings.Contains(SubordinateInfo.SubordinateSQL, "Yes") {
+			sqlthread = white(SubordinateInfo.SubordinateSQL)
 		} else {
-			sqlthread = red(limitString(SlaveInfo.SlaveSQL, 3))
-			normalSQLTh = red(limitString(SlaveInfo.SlaveSQL, 3))
+			sqlthread = red(limitString(SubordinateInfo.SubordinateSQL, 3))
+			normalSQLTh = red(limitString(SubordinateInfo.SubordinateSQL, 3))
 		}
-		i, _ := strconv.Atoi(SlaveInfo.SecBehdMas)
+		i, _ := strconv.Atoi(SubordinateInfo.SecBehdMas)
 		if i != 0 {
-			secbhdmaster = red(SlaveInfo.SecBehdMas)
+			secbhdmain = red(SubordinateInfo.SecBehdMas)
 		} else {
-			secbhdmaster = white(SlaveInfo.SecBehdMas)
+			secbhdmain = white(SubordinateInfo.SecBehdMas)
 		}
 		if GtidMode {
-			retvgtid := removeNewline(SlaveInfo.RetvGTID)
-			exegtid := removeNewline(SlaveInfo.ExeGTID)
+			retvgtid := removeNewline(SubordinateInfo.RetvGTID)
+			exegtid := removeNewline(SubordinateInfo.ExeGTID)
 			if sInfo == "" {
 				sInfo += fmt.Sprintf("%15s %12s %12s %15s %14s %14s %14s %-100s\n %s %-100s",
-					limitString(SlaveInfo.Host, 15),
+					limitString(SubordinateInfo.Host, 15),
 					iothread,
 					sqlthread,
-					secbhdmaster,
+					secbhdmain,
 					val.Metric[RPLSEMIMAS],
 					val.Metric[RPLSEMISLV],
-					limitString(SlaveInfo.ChlNm, 14),
+					limitString(SubordinateInfo.ChlNm, 14),
 					retvgtid,
 					padS(HostnameSize, " ")+padS(DEFAULTPORTSIZE, " ")+padS(58, " "),
 					exegtid)
 			} else {
 				sInfo += fmt.Sprintf("\n%25s %5s %15s %12s %12s %15s %14s %14s %14s %-100s\n %s %-100s",
 					" ", " ",
-					limitString(SlaveInfo.Host, 15),
+					limitString(SubordinateInfo.Host, 15),
 					iothread,
 					sqlthread,
-					secbhdmaster,
+					secbhdmain,
 					val.Metric[RPLSEMIMAS],
 					val.Metric[RPLSEMISLV],
-					limitString(SlaveInfo.ChlNm, 14),
+					limitString(SubordinateInfo.ChlNm, 14),
 					retvgtid,
 					padS(HostnameSize, " ")+padS(DEFAULTPORTSIZE, " ")+padS(58, " "),
 					exegtid)
@@ -606,31 +606,31 @@ func (val *HostAllInfo) formatSlaveInfoWithColoring() (string, string, string) {
 		} else {
 			if sInfo == "" {
 				sInfo += fmt.Sprintf("%15s %12s %12s %17s %10s %15s %10s %15s %14s %14s %-17s",
-					limitString(SlaveInfo.Host, 15),
+					limitString(SubordinateInfo.Host, 15),
 					iothread,
 					sqlthread,
-					SlaveInfo.MsLogFile,
-					SlaveInfo.RMasLogPos,
-					SlaveInfo.RelMasLogFile,
-					SlaveInfo.ExeMasLogPos,
-					secbhdmaster,
+					SubordinateInfo.MsLogFile,
+					SubordinateInfo.RMasLogPos,
+					SubordinateInfo.RelMasLogFile,
+					SubordinateInfo.ExeMasLogPos,
+					secbhdmain,
 					val.Metric[RPLSEMIMAS],
 					val.Metric[RPLSEMISLV],
-					SlaveInfo.ChlNm)
+					SubordinateInfo.ChlNm)
 			} else {
 				sInfo += fmt.Sprintf("\n%25s %5s %15s %12s %12s %17s %10s %15s %10s %15s %14s %14s %-17s",
 					" ", " ",
-					limitString(SlaveInfo.Host, 15),
+					limitString(SubordinateInfo.Host, 15),
 					iothread,
 					sqlthread,
-					SlaveInfo.MsLogFile,
-					SlaveInfo.RMasLogPos,
-					SlaveInfo.RelMasLogFile,
-					SlaveInfo.ExeMasLogPos,
-					secbhdmaster,
+					SubordinateInfo.MsLogFile,
+					SubordinateInfo.RMasLogPos,
+					SubordinateInfo.RelMasLogFile,
+					SubordinateInfo.ExeMasLogPos,
+					secbhdmain,
 					val.Metric[RPLSEMIMAS],
 					val.Metric[RPLSEMISLV],
-					SlaveInfo.ChlNm)
+					SubordinateInfo.ChlNm)
 			}
 		}
 	}
@@ -787,9 +787,9 @@ func modeHeaderColoring(screenFlg int) string {
 		buf += white("F4.P_S Info ")
 	}
 	if screenFlg == MODESLAVE {
-		buf += magenta("F5.SlaveStatus ")
+		buf += magenta("F5.SubordinateStatus ")
 	} else {
-		buf += white("F5.SlaveStatus ")
+		buf += white("F5.SubordinateStatus ")
 	}
 	if screenFlg == MODEROW {
 		buf += magenta("F6.Handler/InnoDB_Rows ")
@@ -939,10 +939,10 @@ func headerColoring() {
 	MyFormat2 = blue("Conn Run Abort Select Update Insert Delete Replace Qcache Call QPSAll StmtExc Commit Rolbk Slow Ssum Read  Delay  IO SQL")
 	MyFormat3 = blue("---- --- ----- ------ ------ ------ ------ ------- ------ ---- ------ ------- ------ ----- ---- ---- ---- ------ --- ---")
 	MySlaFormat1 = blue("---------------------------------------- SLAVE STATUS -------------------------------------------------------------")
-	MySlaFormat2 = blue("   MasterHost    IO SQL     Master_Log     MasterPos     Relay_M_Log    Exec_Pos   Delay SemiM SemiS  ChannelName ")
+	MySlaFormat2 = blue("   MainHost    IO SQL     Main_Log     MainPos     Relay_M_Log    Exec_Pos   Delay SemiM SemiS  ChannelName ")
 	MySlaFormat3 = blue("--------------- --- --- ----------------- ---------- ----------------- ---------- ------ ----- ----- --------------")
 	MySlaFormatGTID1 = blue("---------------------------------------- SLAVE STATUS -------------------------------------------------------------")
-	MySlaFormatGTID2 = blue("   MasterHost    IO SQL  Delay SemiM SemiS   ChannelName          Retrieved_Gtid_Set/Executed_Gtid_Set             ")
+	MySlaFormatGTID2 = blue("   MainHost    IO SQL  Delay SemiM SemiS   ChannelName          Retrieved_Gtid_Set/Executed_Gtid_Set             ")
 	MySlaFormatGTID3 = blue("--------------- --- --- ------ ----- ----- -------------- ---------------------------------------------------------")
 	MyHadrFormat1 = blue("------------ InnoDB Rows ---------- ---------------------------- Handlar -------------------------")
 	MyHadrFormat2 = blue("  read   inserted  updated  deleted  RdFirst   RdKey   RdLast    RdNxt   RdPrev    RdRnd  RdRndNxt")
