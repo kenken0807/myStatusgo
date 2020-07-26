@@ -85,7 +85,7 @@ func run(Opt *Options) int {
 			promPort:   Opt.promPort,
 			db:         db,
 			PromeParam: make(mapProme, 0),
-			MySlave:    make(mapMy, 0), MyStatu: make(mapMy, 0), MyVariable: make(mapMy, 0), MyPerfomanceSchema: make(mapMy, 0), MyInnoDBBuffer: make(mapInnoDBBuffer, 0),
+			MySubordinate:    make(mapMy, 0), MyStatu: make(mapMy, 0), MyVariable: make(mapMy, 0), MyPerfomanceSchema: make(mapMy, 0), MyInnoDBBuffer: make(mapInnoDBBuffer, 0),
 			DigestBase: make(mapDigest, 0), Metric: make(mapPrint, 0), MetricOS: make(mapPrint, 0), MetricJSON: make(mapPrint, 0),
 		})
 		hostInfos2 = append(hostInfos2, HostAllInfo{
@@ -97,7 +97,7 @@ func run(Opt *Options) int {
 			promPort:   Opt.promPort,
 			db:         db,
 			PromeParam: make(mapProme, 0),
-			MySlave:    make(mapMy, 0), MyStatu: make(mapMy, 0), MyVariable: make(mapMy, 0), MyPerfomanceSchema: make(mapMy, 0), MyInnoDBBuffer: make(mapInnoDBBuffer, 0),
+			MySubordinate:    make(mapMy, 0), MyStatu: make(mapMy, 0), MyVariable: make(mapMy, 0), MyPerfomanceSchema: make(mapMy, 0), MyInnoDBBuffer: make(mapInnoDBBuffer, 0),
 			Metric: make(mapPrint, 0), MetricOS: make(mapPrint, 0), MetricJSON: make(mapPrint, 0),
 		})
 		screenHostlist = append(screenHostlist, fmt.Sprintf("%d", MaxTopNPosition))
@@ -223,7 +223,7 @@ func checkAutoStop(endSec int64, startTime time.Time) bool {
 func (val *HostAllInfo) initializeStruct(old *HostAllInfo) {
 	m.Lock()
 	defer m.Unlock()
-	val.SlaveInfo = make([]SlaveInfo, 0)
+	val.SubordinateInfo = make([]SubordinateInfo, 0)
 	val.DigestMetric = make([]DigestMetric, TopN)
 	val.strFileIOperTable = make(mapStrFileIOperTable, 0)
 	val.FileIOMetric = make([]FileIOperTable, TopN)
@@ -352,7 +352,7 @@ func (dbErrorPerQuery *dbErrorPerQuery) addSlowCheckKey() {
 	dbErrorPerQuery.lock.slowCheckKey = LOCKCHECKSLOW
 	dbErrorPerQuery.threads.slowCheckKey = THREADCHECKSLOW
 	dbErrorPerQuery.perf.slowCheckKey = PERFCHECKSLOW
-	dbErrorPerQuery.slave.slowCheckKey = ShowSlaveStatusSQL
+	dbErrorPerQuery.subordinate.slowCheckKey = ShowSubordinateStatusSQL
 	dbErrorPerQuery.status.slowCheckKey = ShowStatusSQL
 	dbErrorPerQuery.variables.slowCheckKey = ShowVariableSQL
 }
