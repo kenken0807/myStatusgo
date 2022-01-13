@@ -652,7 +652,7 @@ func removeColor(out string) string {
 func getMetricForFile(now int, old int, title *string, content *string, nowTime string, outputTitle int) string {
 	var out string
 	if now == old && outputTitle != 1 {
-		out = fmt.Sprintf("%s\n%s", nowTime, *content)
+		out = fmt.Sprintf("%s\n%s", nowTime, strings.Replace(*content, "\n", "\n" + nowTime + "\t", -1))
 	} else {
 		out = *title + *content
 	}
